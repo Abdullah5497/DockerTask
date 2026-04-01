@@ -9,28 +9,14 @@ pipeline {
 
         stage('Clone Code') {
             steps {
-                git 'https://github.com/Abdullah5497/DockerTask'
+                git branch: 'main', url: 'https://github.com/Abdullah5497/DockerTask'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build("${IMAGE_NAME}:latest")
-                }
-            }
-        }
-
-        stage('Login to Docker Hub') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-cred',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh '''
-                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                    '''
+                    docker.build("${IMAGE_NAME}:latest", ".")
                 }
             }
         }
@@ -38,14 +24,10 @@ pipeline {
         stage('Push Image') {
             steps {
                 script {
-                    docker.image("${IMAGE_NAME}:latest").push()
+                    docker.withRegistry('', 'dockerhub-cred') {
+                        docker.image("${IMAGE_NAME}:latest").push()
+                    }
                 }
-            }
-        }
-
-        stage('Logout') {
-            steps {
-                sh 'docker logout'
             }
         }
     }
